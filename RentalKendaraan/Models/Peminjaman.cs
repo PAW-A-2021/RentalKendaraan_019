@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.ComponentModel.DataAnnotations;
 
 #nullable disable
 
@@ -13,10 +14,12 @@ namespace RentalKendaraan.Models
         }
 
         public int IdPeminjaman { get; set; }
+        [Required(ErrorMessage = "Tanggal Peminjaman Tidak Boleh Kosong")]
         public DateTime? TglPeminjaman { get; set; }
         public int? IdKendaraan { get; set; }
         public int? IdCustomer { get; set; }
         public int? IdJaminan { get; set; }
+        [Required(ErrorMessage = "Biaya Tidak Boleh Kosong")]
         public int? Biaya { get; set; }
 
         public virtual Customer IdCustomerNavigation { get; set; }
