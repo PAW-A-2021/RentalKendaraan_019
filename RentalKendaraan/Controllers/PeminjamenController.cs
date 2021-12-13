@@ -19,15 +19,15 @@ namespace RentalKendaraan.Controllers
         }
 
         // GET: Peminjamen
-        public async Task<IActionResult> Index(string ktsd, string searchString)
+        public async Task<IActionResult> Index(string ktsd, string searchString, string sortOrder, string currentFilter, int? pageNumber)
         {
             var ktsdList = new List<string>();
-            var ktsdQuery = from d in _context.Peminjamen orderby d.Biaya select d.Biaya.ToString();
+            var ktsdQuery = from d in _context.Peminjamen orderby d.IdKendaraanNavigation.NamaKendaraan select d.IdKendaraanNavigation.NamaKendaraan.ToString();
 
             ktsdList.AddRange(ktsdQuery.Distinct());
             ViewBag.ktsd = new SelectList(ktsdList);
 
-            var menu = from m in _context.Peminjamen.Include(k => k.IdJaminanNavigation).Include(k => k.IdCustomerNavigation).Include(k => k.IdKendaraanNavigation) select m;
+            var menu = from m in _context.Peminjamen.Include(k => k.IdCustomerNavigation).Include(k => k.IdJaminanNavigation).Include(k => k.IdKendaraanNavigation) select m;
 
             if (!string.IsNullOrEmpty(ktsd))
             {
@@ -39,7 +39,42 @@ namespace RentalKendaraan.Controllers
                 menu = menu.Where(s => s.TglPeminjaman.ToString().Contains(searchString) || s.Biaya.ToString().Contains(searchString) || s.IdCustomer.ToString().Contains(searchString) || s.IdJaminan.ToString().Contains(searchString) || s.IdKendaraan.ToString().Contains(searchString));
             }
 
-            return View(await menu.ToListAsync());
+            ViewData["CurrentSort"] = sortOrder;
+            if (searchString != null)
+            {
+                pageNumber = 1;
+            }
+            else
+            {
+                searchString = currentFilter;
+            }
+
+            ViewData["CurrentFilter"] = searchString;
+
+            //definisi jumlah data pada halaman
+            int pageSize = 5;
+
+            //untuk sorting
+            ViewData["NameSortParm"] = String.IsNullOrEmpty(sortOrder) ? "name_desc" : "";
+            ViewData["DateSortParm"] = sortOrder == "Date" ? "date_desc" : "Date";
+
+            switch (sortOrder)
+            {
+                case "name_desc":
+                    menu = menu.OrderByDescending(s => s.IdCustomerNavigation.NamaCustomer);
+                    break;
+                case "Date":
+                    menu = menu.OrderBy(s => s.TglPeminjaman);
+                    break;
+                case "date_desc":
+                    menu = menu.OrderByDescending(s => s.TglPeminjaman);
+                    break;
+                default: //name ascending
+                    menu = menu.OrderBy(s => s.IdCustomerNavigation.NamaCustomer);
+                    break;
+            }
+
+            return View(await PaginatedList<Peminjaman>.CreateAsync(menu.AsNoTracking(), pageNumber ?? 1, pageSize));
         }
 
         // GET: Peminjamen/Details/5
